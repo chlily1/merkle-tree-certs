@@ -309,6 +309,52 @@ func TestCreateCACertificate(t *testing.T) {
 			},
 			expectedHex: "3082012b30820118a003020102020101300a06082b060105050706243010310e300c06082b060105050719010c00301e170d3230303130313030303030305a170d3230313233313233353935395a301931173015060a2b0601040182da4b2f010c0733323437332e313059301306072a8648ce3d020106082a8648ce3d030107034200047a9ca793bbe3363b12fb1c28c7fe2d3e967231ece1346f70e75d656e7bee530550eaf1a1ba2aa16afb1a6b579965e90b4f25bf934c1a7e2afd484690f1329c6da35a3058300e0603551d0f0101ff040403020204300f0603551d130101ff040530030101ff3035060a2b0601040182da4b2f020101ff04243022300b0609608648016503040201300a06082a8648ce3d040302020701000000000000300a06082b06010505070624030100",
 		},
+		// The extension OID can be overridden.
+		{
+			version: VersionPlants07,
+			id:      id,
+			caCert: CACertConfig{
+				CertConfigBase: CertConfigBase{
+					NotBefore:  time.Unix(1577836800, 0), // 2020-01-01 00:00:00
+					NotAfter:   time.Unix(1609459199, 0), // 2020-12-31 23:59:59
+					KeyUsage:   KeyUsageConfig(x509.KeyUsageCertSign),
+					IsCA:       new(true),
+					MaxPathLen: new(int64(5)),
+				},
+				MinSerial: SerialConfig{Log: 1, Index: 0},
+				MaxSerial: SerialConfig{Log: 5, Index: 1<<48 - 1},
+				OverrideMTCCAExtensionOID: OverrideExtOIDConfig(oidMTCCAWithSHA256Experiment),
+			},
+			cosigner: CosignerConfig{
+				CosignerID:         id,
+				SignatureAlgorithm: SignatureAlgorithmP256WithSHA256,
+				PrivateKey:         p256PrivateKey,
+			},
+			expectedHex: "3082012530820112a003020102020101300a06082b060105050706243010310e300c06082b060105050719010c00301e170d3230303130313030303030305a170d3230313233313233353935395a30143112301006082b060105050719030d0481fd59013059301306072a8648ce3d020106082a8648ce3d030107034200047a9ca793bbe3363b12fb1c28c7fe2d3e967231ece1346f70e75d656e7bee530550eaf1a1ba2aa16afb1a6b579965e90b4f25bf934c1a7e2afd484690f1329c6da3593057300e0603551d0f0101ff04040302020430120603551d130101ff040830060101ff0201053031060a2b0601040182da4b2f040101ff0420301e300a06082a8648ce3d040302020701000000000000020705ffffffffffff300a06082b06010505070624030100",
+		},
+		// The extension value can be overridden.
+		{
+			version: VersionPlants07,
+			id:      id,
+			caCert: CACertConfig{
+				CertConfigBase: CertConfigBase{
+					NotBefore:  time.Unix(1577836800, 0), // 2020-01-01 00:00:00
+					NotAfter:   time.Unix(1609459199, 0), // 2020-12-31 23:59:59
+					KeyUsage:   KeyUsageConfig(x509.KeyUsageCertSign),
+					IsCA:       new(true),
+					MaxPathLen: new(int64(5)),
+				},
+				MinSerial: SerialConfig{Log: 1, Index: 0},
+				MaxSerial: SerialConfig{Log: 5, Index: 1<<48 - 1},
+				OverrideMTCCAExtensionValue: []byte{0xaa, 0xbb, 0xcc, 0xdd},
+			},
+			cosigner: CosignerConfig{
+				CosignerID:         id,
+				SignatureAlgorithm: SignatureAlgorithmP256WithSHA256,
+				PrivateKey:         p256PrivateKey,
+			},
+			expectedHex: "308201063081f4a003020102020101300a06082b060105050706243010310e300c06082b060105050719010c00301e170d3230303130313030303030305a170d3230313233313233353935395a30143112301006082b060105050719030d0481fd59013059301306072a8648ce3d020106082a8648ce3d030107034200047a9ca793bbe3363b12fb1c28c7fe2d3e967231ece1346f70e75d656e7bee530550eaf1a1ba2aa16afb1a6b579965e90b4f25bf934c1a7e2afd484690f1329c6da33b3039300e0603551d0f0101ff04040302020430120603551d130101ff040830060101ff020105301306082b060105050701260101ff0404aabbccdd300a06082b06010505070624030100",
+		},
 	}
 	for i, tt := range tests {
 		cosigner, err := NewCosignerFromConfig(tt.version, &tt.cosigner)
