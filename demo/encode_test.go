@@ -196,6 +196,140 @@ func TestMarshalTBSCertificate(t *testing.T) {
 	}
 }
 
+func TestCreateCACertificate(t *testing.T) {
+	id, ok := TrustAnchorIDFromString("32473.1")
+	if !ok {
+		t.Fatalf("could not make trust anchor ID")
+	}
+	p256PrivateKey := []byte{
+		0x30, 0x81, 0x87, 0x02, 0x01, 0x00, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86,
+		0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d,
+		0x03, 0x01, 0x07, 0x04, 0x6d, 0x30, 0x6b, 0x02, 0x01, 0x01, 0x04, 0x20,
+		0xb6, 0x1a, 0xe0, 0xba, 0x57, 0x7a, 0x2d, 0x93, 0x49, 0xc3, 0xa5, 0x0c,
+		0x6e, 0x1c, 0x93, 0x90, 0xc2, 0xfb, 0xbb, 0x70, 0x4c, 0x71, 0xd1, 0x32,
+		0xa2, 0x64, 0x08, 0xc0, 0x1f, 0x8d, 0xda, 0x8e, 0xa1, 0x44, 0x03, 0x42,
+		0x00, 0x04, 0x7a, 0x9c, 0xa7, 0x93, 0xbb, 0xe3, 0x36, 0x3b, 0x12, 0xfb,
+		0x1c, 0x28, 0xc7, 0xfe, 0x2d, 0x3e, 0x96, 0x72, 0x31, 0xec, 0xe1, 0x34,
+		0x6f, 0x70, 0xe7, 0x5d, 0x65, 0x6e, 0x7b, 0xee, 0x53, 0x05, 0x50, 0xea,
+		0xf1, 0xa1, 0xba, 0x2a, 0xa1, 0x6a, 0xfb, 0x1a, 0x6b, 0x57, 0x99, 0x65,
+		0xe9, 0x0b, 0x4f, 0x25, 0xbf, 0x93, 0x4c, 0x1a, 0x7e, 0x2a, 0xfd, 0x48,
+		0x46, 0x90, 0xf1, 0x32, 0x9c, 0x6d,
+	}
+
+	var tests = []struct {
+		version     DraftVersion
+		id          TrustAnchorID
+		caCert      CACertConfig
+		cosigner    CosignerConfig
+		expectedHex string
+	}{
+		// Fill in a bit of everything.
+		{
+			version: VersionPlants07,
+			id:      id,
+			caCert: CACertConfig{
+				CertConfigBase: CertConfigBase{
+					NotBefore:  time.Unix(1577836800, 0), // 2020-01-01 00:00:00
+					NotAfter:   time.Unix(1609459199, 0), // 2020-12-31 23:59:59
+					KeyUsage:   KeyUsageConfig(x509.KeyUsageCertSign),
+					IsCA:       new(true),
+					MaxPathLen: new(int64(5)),
+				},
+				MinSerial: SerialConfig{Log: 1, Index: 0},
+				MaxSerial: SerialConfig{Log: 5, Index: 1<<48 - 1},
+			},
+			cosigner: CosignerConfig{
+				CosignerID:         id,
+				SignatureAlgorithm: SignatureAlgorithmP256WithSHA256,
+				PrivateKey:         p256PrivateKey,
+			},
+			expectedHex: "3082012330820110a003020102020101300a06082b060105050706243010310e300c06082b060105050719010c00301e170d3230303130313030303030305a170d3230313233313233353935395a30143112301006082b060105050719030d0481fd59013059301306072a8648ce3d020106082a8648ce3d030107034200047a9ca793bbe3363b12fb1c28c7fe2d3e967231ece1346f70e75d656e7bee530550eaf1a1ba2aa16afb1a6b579965e90b4f25bf934c1a7e2afd484690f1329c6da3573055300e0603551d0f0101ff04040302020430120603551d130101ff040830060101ff020105302f06082b060105050701260101ff0420301e300a06082a8648ce3d040302020701000000000000020705ffffffffffff300a06082b06010505070624030100",
+		},
+		// draft-plants-06 uses experimental OIDs.
+		{
+			version: VersionPlants06,
+			id:      id,
+			caCert: CACertConfig{
+				CertConfigBase: CertConfigBase{
+					NotBefore: time.Unix(1577836800, 0), // 2020-01-01 00:00:00
+					NotAfter:  time.Unix(1609459199, 0), // 2020-12-31 23:59:59
+					KeyUsage:  KeyUsageConfig(x509.KeyUsageCertSign),
+					IsCA:      new(true),
+				},
+				MinSerial: SerialConfig{Log: 1, Index: 0},
+				MaxSerial: SerialConfig{Log: 5, Index: 1<<48 - 1},
+			},
+			cosigner: CosignerConfig{
+				CosignerID:         id,
+				SignatureAlgorithm: SignatureAlgorithmP256WithSHA256,
+				PrivateKey:         p256PrivateKey,
+			},
+			expectedHex: "3082012430820111a003020102020101300a06082b060105050706243010310e300c06082b060105050719010c00301e170d3230303130313030303030305a170d3230313233313233353935395a301631143012060a2b0601040182da4b2f030d0481fd59013059301306072a8648ce3d020106082a8648ce3d030107034200047a9ca793bbe3363b12fb1c28c7fe2d3e967231ece1346f70e75d656e7bee530550eaf1a1ba2aa16afb1a6b579965e90b4f25bf934c1a7e2afd484690f1329c6da3563054300e0603551d0f0101ff040403020204300f0603551d130101ff040530030101ff3031060a2b0601040182da4b2f040101ff0420301e300a06082a8648ce3d040302020701000000000000020705ffffffffffff300a06082b06010505070624030100",
+		},
+		// draft-plants-05 uses UTF8String for the X.509 name and a separate log
+		// hash OID in the CA extension.
+		{
+			version: VersionPlants05,
+			id:      id,
+			caCert: CACertConfig{
+				CertConfigBase: CertConfigBase{
+					NotBefore: time.Unix(1577836800, 0), // 2020-01-01 00:00:00
+					NotAfter:  time.Unix(1609459199, 0), // 2020-12-31 23:59:59
+					KeyUsage:  KeyUsageConfig(x509.KeyUsageCertSign),
+					IsCA:      new(true),
+				},
+				MinSerial: SerialConfig{Log: 1, Index: 0},
+				MaxSerial: SerialConfig{Log: 5, Index: 1<<48 - 1},
+			},
+			cosigner: CosignerConfig{
+				CosignerID:         id,
+				SignatureAlgorithm: SignatureAlgorithmP256WithSHA256,
+				PrivateKey:         p256PrivateKey,
+			},
+			expectedHex: "3082013430820121a003020102020101300a06082b060105050706243010310e300c06082b060105050719010c00301e170d3230303130313030303030305a170d3230313233313233353935395a301931173015060a2b0601040182da4b2f010c0733323437332e313059301306072a8648ce3d020106082a8648ce3d030107034200047a9ca793bbe3363b12fb1c28c7fe2d3e967231ece1346f70e75d656e7bee530550eaf1a1ba2aa16afb1a6b579965e90b4f25bf934c1a7e2afd484690f1329c6da3633061300e0603551d0f0101ff040403020204300f0603551d130101ff040530030101ff303e060a2b0601040182da4b2f020101ff042d302b300b0609608648016503040201300a06082a8648ce3d040302020701000000000000020705ffffffffffff300a06082b06010505070624030100",
+		},
+		// draft-plants-04 did not have a maxSerial field.
+		{
+			version: VersionPlants04,
+			id:      id,
+			caCert: CACertConfig{
+				CertConfigBase: CertConfigBase{
+					NotBefore: time.Unix(1577836800, 0), // 2020-01-01 00:00:00
+					NotAfter:  time.Unix(1609459199, 0), // 2020-12-31 23:59:59
+					KeyUsage:  KeyUsageConfig(x509.KeyUsageCertSign),
+					IsCA:      new(true),
+				},
+				MinSerial: SerialConfig{Log: 1, Index: 0},
+				MaxSerial: SerialConfig{Log: 5, Index: 1<<48 - 1},
+			},
+			cosigner: CosignerConfig{
+				CosignerID:         id,
+				SignatureAlgorithm: SignatureAlgorithmP256WithSHA256,
+				PrivateKey:         p256PrivateKey,
+			},
+			expectedHex: "3082012b30820118a003020102020101300a06082b060105050706243010310e300c06082b060105050719010c00301e170d3230303130313030303030305a170d3230313233313233353935395a301931173015060a2b0601040182da4b2f010c0733323437332e313059301306072a8648ce3d020106082a8648ce3d030107034200047a9ca793bbe3363b12fb1c28c7fe2d3e967231ece1346f70e75d656e7bee530550eaf1a1ba2aa16afb1a6b579965e90b4f25bf934c1a7e2afd484690f1329c6da35a3058300e0603551d0f0101ff040403020204300f0603551d130101ff040530030101ff3035060a2b0601040182da4b2f020101ff04243022300b0609608648016503040201300a06082a8648ce3d040302020701000000000000300a06082b06010505070624030100",
+		},
+	}
+	for i, tt := range tests {
+		cosigner, err := NewCosignerFromConfig(tt.version, &tt.cosigner)
+		if err != nil {
+			t.Errorf("%d. NewCosignerFromConfig() failed: %s", i, err)
+			continue
+		}
+		config := &CAConfig{
+			Version: tt.version,
+			ID:      tt.id,
+			CACert:  tt.caCert,
+		}
+		cert, err := CreateCACertificate(config, cosigner)
+		if err != nil {
+			t.Errorf("%d. CreateCACertificate() failed: %s", i, err)
+		} else if got := hex.EncodeToString(cert); got != tt.expectedHex {
+			t.Errorf("%d. CreateCACertificate() gave %s, wanted %s", i, got, tt.expectedHex)
+		}
+	}
+}
+
 func TestMTCProofSignaturesLengthPrefix(t *testing.T) {
 	tests := []struct {
 		name      string
