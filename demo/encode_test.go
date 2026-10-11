@@ -10,8 +10,6 @@ import (
 	"golang.org/x/crypto/cryptobyte"
 )
 
-func ptrOf[T any](t T) *T { return &t }
-
 func TestMarshalTBSCertificate(t *testing.T) {
 	issuer, ok := TrustAnchorIDFromString("32473.1")
 	if !ok {
@@ -93,8 +91,8 @@ func TestMarshalTBSCertificate(t *testing.T) {
 					NotBefore:  time.Unix(1577836800, 0), // 2020-01-01 00:00:00
 					NotAfter:   time.Unix(1609459199, 0), // 2020-12-31 23:59:59
 					KeyUsage:   KeyUsageConfig(x509.KeyUsageCertSign),
-					IsCA:       ptrOf(true),
-					MaxPathLen: ptrOf(int64(5)),
+					IsCA:       new(true),
+					MaxPathLen: new(int64(5)),
 				},
 			},
 			expectedTBSHex:      "3081e7a003020102020204d2300c060a2b0601040182da4b2f00301931173015060a2b0601040182da4b2f010c0733323437332e31301e170d3230303130313030303030305a170d3230313233313233353935395a3010310e300c06035504031305412043413f3059301306072a8648ce3d020106082a8648ce3d03010703420004e62b69e2bf659f97be2f1e0d948a4cd5976bb7a91e0d46fbdda9a91e9ddcba5a01e7d697a80a18f9c3c4a31e56e27c8348db161a1cf51d7ef1942d4bcf7222c1a3263024300e0603551d0f0101ff04040302020430120603551d130101ff040830060101ff020105",
