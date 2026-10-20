@@ -1401,7 +1401,7 @@ Given the inputs in {{certificate-inputs}} and the corresponding log's landmark 
 
 1. Let `idx` be the entry index.
 
-2. Let `L` be the lowest numbered landmark whose tree size is strictly greater than `idx`. If no such landmark has been allocated yet, wait for one to be allocated. If the entry has already expired and historical landmark information is unavoidable, abort the procedure.
+2. Let `L` be the lowest numbered landmark whose tree size is strictly greater than `idx`. If no such landmark has been allocated yet, wait for one to be allocated. If the entry has already expired and historical landmark information is unavailable, abort the procedure.
 
 3. Determine the `L`'s subtrees ({{landmark-tree-sizes}}) and select the unique one whose `[start, end)` interval contains `idx`.
 
