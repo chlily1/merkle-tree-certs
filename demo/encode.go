@@ -315,11 +315,11 @@ func AddTBSCertificate(b *cryptobyte.Builder, version DraftVersion, issuer Trust
 	})
 }
 
-// addEmptyMTCEntryExtensions adds an empty extensions field to b if the
-// version is at least draft-plants-04.
-func addEmptyMTCEntryExtensions(b *cryptobyte.Builder, version DraftVersion) {
+// addMTCEntryExtensions adds an extensions field with contents exts to b if
+// the version is at least draft-plants-04.
+func addMTCEntryExtensions(b *cryptobyte.Builder, version DraftVersion, exts []byte) {
 	if version >= VersionPlants04 {
-		b.AddUint16LengthPrefixed(func(_ *cryptobyte.Builder) {})
+		b.AddUint16LengthPrefixed(func(child *cryptobyte.Builder) { child.AddBytes(exts) })
 	}
 }
 
@@ -335,7 +335,7 @@ func MarshalNullEntry(version DraftVersion) []byte {
 	b := cryptobyte.NewBuilder(nil)
 	// Starting in draft 04, MerkleTreeCertEntry is prefixed with a
 	// MerkleTreeCertEntryExtension vector.
-	addEmptyMTCEntryExtensions(b, version)
+	addMTCEntryExtensions(b, version, []byte{})
 	b.AddUint16(entryTypeNull)
 	out, err := b.Bytes()
 	if err != nil {
@@ -374,7 +374,7 @@ func MarshalTBSCertificateLogEntry(version DraftVersion, issuer TrustAnchorID, e
 		addExtensions(tbs, &entry.CertConfigBase, nil)
 	}
 	b := cryptobyte.NewBuilder(nil)
-	addEmptyMTCEntryExtensions(b, version)
+	addMTCEntryExtensions(b, version, entry.MTCEntryExtensions)
 	b.AddUint16(entryTypeTBSCert)
 	// Starting draft-davidben-10, the SEQUENCE wrapper is omitted.
 	if version >= VersionDavidben10 {
@@ -477,7 +477,7 @@ RetryCosigs:
 			} else {
 				certSig.AddBytes([]byte{0})
 			}
-			addEmptyMTCEntryExtensions(certSig, config.Version)
+			addMTCEntryExtensions(certSig, config.Version, entry.MTCEntryExtensions)
 			if config.Version >= VersionPlants04 {
 				certSig.AddUint48(start)
 				certSig.AddUint48(end)
