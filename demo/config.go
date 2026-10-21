@@ -199,6 +199,11 @@ type EntryConfig struct {
 	Checkpoints []string
 	// A list of certificates to generate from this entry.
 	Certificates []CertificateConfig
+	// MTCEntryExtensions, if not empty, is used as the contents of the extensions
+	// field of this entry's log entry, and of the MTCProof of each certificate
+	// generated from this entry. It need not be a well-formed list of extensions.
+	// Requires draft-plants-04 or later.
+	MTCEntryExtensions []byte
 }
 
 type SubjectConfig struct {
